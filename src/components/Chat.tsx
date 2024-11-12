@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { Message } from './GamePage';
 
 interface ChatProps {
     to: string;
-    messages: { from: string; message: string; to: string; chatKey: string }[];
+    messages: Message[];
     sendMessage: (to: string, message: string) => void;
+    seeker: string
 }
 
-const Chat: React.FC<ChatProps> = ({ to, messages, sendMessage }) => {
+const Chat: React.FC<ChatProps> = ({ to, messages, sendMessage, seeker }) => {
     const [message, setMessage] = useState<string>('');
     const { user } = useAuth();
 
@@ -28,22 +30,22 @@ const Chat: React.FC<ChatProps> = ({ to, messages, sendMessage }) => {
                     </div>
                 ))}
             </div>
-
-            <div className="input-area flex items-center">
-                <input
-                    type="text"
-                    className="input-message w-full p-2 border rounded-l-lg"
-                    placeholder="Type a message..."
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                />
-                <button
-                    className="send-btn p-2 bg-blue-500 text-white rounded-r-lg"
-                    onClick={handleMessage}
-                >
-                    Send
-                </button>
-            </div>
+            {seeker === user.email || to === seeker ?
+                <div className="input-area flex items-center">
+                    <input
+                        type="text"
+                        className="input-message w-full p-2 border rounded-l-lg"
+                        placeholder="Type a message..."
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                    />
+                    <button
+                        className={`send-btn p-2 text-white rounded-r-lg ${messages[messages.length - 1]?.from === user.email ? "pointer-events-none bg-gray-400" : "bg-blue-500"}`}
+                        onClick={handleMessage}
+                    >
+                        Send
+                    </button>
+                </div> : ""}
         </div>
     );
 };
