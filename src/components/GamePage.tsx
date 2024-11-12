@@ -1,41 +1,39 @@
 import { useEffect, useState } from 'react';
-import { getFirestore, doc, getDoc, query, collection, where, getDocs } from 'firebase/firestore';  // Ensure correct imports
+import { getFirestore, query, collection, where, getDocs } from 'firebase/firestore';
 import { useParams } from 'react-router-dom';
 import Chat from './Chat';
 import { useAuth } from '../context/AuthContext';
-
-// Your Firebase configuration and initialization should be here
+import { socket } from '../socket';
+import { getChatKey, shuffleArray } from '../utils/utils';
 
 const GamePage = () => {
-    const { roomCode } = useParams();  // Assuming roomCode is passed via the URL params
+    const { roomCode } = useParams();
     const [seeker, setSeeker] = useState<string | null>(null);
     const [players, setPlayers] = useState<string[]>([]);
-    const db = getFirestore();  // Initialize Firestore
+    const db = getFirestore();
     const { user } = useAuth();
+    const [messages, setMessages] = useState<{ from: string; message: string; to: string, chatKey: string }[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
 
     useEffect(() => {
         const fetchGameData = async () => {
             if (roomCode) {
                 try {
-                    // Create a query to search for the room by name
                     const roomQuery = query(
-                        collection(db, 'rooms'),   // Get reference to the 'rooms' collection
-                        where('name', '==', roomCode)  // Filter by the 'name' field (which corresponds to roomCode)
+                        collection(db, 'rooms'),
+                        where('name', '==', roomCode)
                     );
 
-                    // Execute the query
                     const querySnapshot = await getDocs(roomQuery);
 
                     if (!querySnapshot.empty) {
-                        // If a room matching the name exists, get the first document
-                        const roomDoc = querySnapshot.docs[0]; // Assuming roomCode is unique, take the first result
-                        const roomData = roomDoc.data();  // Fetch data from the document
+                        const roomDoc = querySnapshot.docs[0];
+                        const roomData = roomDoc.data();
                         console.log(roomData);
 
                         if (roomData) {
-                            // Assuming roomData contains 'seeker' and 'hiders' fields
-                            setSeeker(roomData.seeker);  // Set the Seeker
-                            setPlayers([...roomData.players]);  // Set the list of players
+                            setSeeker(roomData.seeker);
+                            setPlayers(shuffleArray([...roomData.players, "chatgpt"]));
                         }
                     } else {
                         console.error('Room not found with the name:', roomCode);
@@ -47,11 +45,27 @@ const GamePage = () => {
         };
 
         fetchGameData();
+    }, [roomCode, db]);
+
+    useEffect(() => {
+        socket.on('receive-message', (data) => {
+            console.log(data);
+
+            const chatKey = getChatKey(data.from, data.to);
+            setMessages((prevMessages) => [...prevMessages, { ...data, chatKey }]);
+        });
 
         return () => {
-            // Cleanup if necessary
+            socket.off('receive-message');
         };
-    }, [roomCode, db]);
+    }, []);
+
+    const sendMessage = (to: string, message: string) => {
+        if (message.trim()) {
+            socket.emit('send-message', message, user, to);
+        }
+    };
+
 
     return (
         <div>
@@ -59,16 +73,21 @@ const GamePage = () => {
             {seeker && <h3>Seeker: {seeker}</h3>}
             <div>
                 <h4>Players:</h4>
-                {players.map((player, index) => player === user.email ? "" : (
-                    <div key={index}>
-                        <h5>{player + ' ' + index}</h5>
-                        <Chat to={player} /> {/* Chat with each player */}
-                    </div>
-                ))}
-
-                {/* Optionally, Chat with ChatGPT */}
-                <h4>Chat with ChatGPT</h4>
-                <Chat to="ChatGPT" /> {/* Chat with ChatGPT */}
+                {players.map((player, i) =>
+                    player === user.email ? null : player === "chatgpt" && seeker ? <Chat
+                        to="ChatGPT"
+                        messages={messages.filter((msg) => msg.chatKey === getChatKey(seeker, "ChatGPT"))}
+                        sendMessage={sendMessage}
+                        key={i}
+                    /> : (
+                        <Chat
+                            to={player}
+                            messages={messages.filter((msg) => msg.chatKey === getChatKey(user.email, player))}
+                            sendMessage={sendMessage}
+                            key={i}
+                        />
+                    )
+                )}
             </div>
         </div>
     );

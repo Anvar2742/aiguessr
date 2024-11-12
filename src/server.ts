@@ -4,6 +4,8 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import { db } from './firebase';  // Assuming you have Firebase setup in `firebase.ts`
 import { doc, deleteDoc, updateDoc, arrayUnion, setDoc, getDoc, query, where, getDocs, collection } from 'firebase/firestore';
+import axios from 'axios';
+import { configDotenv } from 'dotenv';
 
 // Create an Express app
 const app = express();
@@ -17,6 +19,7 @@ app.use(cors({
 
 // Create an HTTP server
 const server = http.createServer(app);
+configDotenv()
 
 // Create a Socket.IO server and allow CORS for WebSocket connections
 const io = new Server(server, {
@@ -30,6 +33,8 @@ let players: { [key: string]: { email: string; roomCode: string | null; status: 
 let gameStarted: boolean = false;
 let seeker: string | null = null;
 
+app.use(express.json());
+
 io.on('connection', (socket) => {
     console.log('a user connected:', socket.id);
 
@@ -41,7 +46,7 @@ io.on('connection', (socket) => {
     });
 
     // Listen for 'start-game' event to start the game
-    socket.on('start-game', async (roomCode) => {        
+    socket.on('start-game', async (roomCode) => {
         if (!gameStarted) {
             // Randomly select a Seeker from the players
             const playerArray = Object.values(players);
@@ -61,7 +66,7 @@ io.on('connection', (socket) => {
 
             if (!querySnapshot.empty) {
                 // If a room matching the name exists, update it
-                
+
                 const roomDoc = querySnapshot.docs[0];  // Get the first matching document
                 const roomRef = doc(db, 'rooms', roomDoc.id);  // Get the reference to the document
 
@@ -96,7 +101,7 @@ io.on('connection', (socket) => {
             delete players[socket.id]; // Remove the player from the players list
         }
     });
- 
+
     // Handle player disconnection
     socket.on('disconnect', () => {
         const player = players[socket.id];
@@ -107,11 +112,33 @@ io.on('connection', (socket) => {
     });
 
     // Handle sending messages to a specific player or ChatGPT
-    socket.on('send-message', (message, from, to) => {
-        console.log(message, to);
-        
+    socket.on('send-message', async (message, from, to) => {
+        // Log the incoming message
+        console.log('Received message:', message, 'from:', from.email, 'to:', to);
+
+        // Emit the original message to all clients (immediate response)
         io.emit('receive-message', { message, from: from.email, to });
+
+        if (to?.toLowerCase() === "chatgpt") {
+            try {
+                // Request GPT response from the backend
+                const gptResponse = await axios.post('http://localhost:3000/chatgpt', { message });
+                console.log('GPT Response:', gptResponse.data.message);
+    
+                // Emit the GPT response after a delay (e.g., 2 seconds)
+                setTimeout(() => {
+                    io.emit('receive-message', {
+                        message: gptResponse.data.message,
+                        from: 'ChatGPT',  // The sender will be "ChatGPT"
+                        to: from.email,
+                    });
+                }, 2000);  // Delay of 2 seconds (2000ms)
+            } catch (error) {
+                console.error('Error fetching GPT response:', error);
+            }
+        }
     });
+
 
     // Handle chat with ChatGPT
     socket.on('chatgpt-message', (message) => {
@@ -119,7 +146,38 @@ io.on('connection', (socket) => {
     });
 
 });
- 
+
+// Endpoint to communicate with ChatGPT API
+app.post('/chatgpt', async (req, res) => {
+    const { message } = req.body;  // Message sent from chat
+    const apiKey = process.env.VITE_OPENAI_API_KEY
+
+    // console.log(apiKey);
+
+    try {
+        const response = await axios.post('https://api.openai.com/v1/chat/completions', {
+            model: 'gpt-3.5-turbo', // Use GPT-4 for better performance (e.g., 'gpt-4' or 'gpt-3.5-turbo')
+            messages: [{ role: 'user', content: message }],
+            max_tokens: 150,
+            temperature: 0.7,  // Control randomness, higher is more random
+        }, {
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const gptResponse = response.data.choices[0].message.content;
+
+        // Send the response back to the frontend (chat)
+        res.json({ message: gptResponse });
+    } catch (error) {
+        console.error(error);
+        // res.status(500).send('Error interacting with the ChatGPT API');
+    }
+});
+
+
 // Start the server on port 3000
 server.listen(3000, () => {
     console.log('Server is running on http://localhost:3000');
