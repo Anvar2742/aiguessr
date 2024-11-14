@@ -9,5 +9,5 @@ export const shuffleArray = (array: any[]) => {
 
 
 export const getChatKey = (from: string, to: string) => {
-    return [from, to].sort().join('-').toLowerCase();
+    return [from, to].sort((a, b) => a.localeCompare(b)).join('-').toLowerCase();
 }

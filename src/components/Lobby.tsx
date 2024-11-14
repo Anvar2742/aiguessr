@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { socket } from '../socket';  // Import socket from socket.ts
-import { db, collection, query, where, onSnapshot } from '../firebase';
+import { realtimeDb, ref, onValue, update, set, remove } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
 interface Player {
@@ -11,83 +10,105 @@ interface Player {
 
 const Lobby: React.FC = () => {
     const { user } = useAuth();
-    const { roomCode } = useParams();  // Access roomCode from URL params
+    const { roomCode } = useParams<{ roomCode: string }>();
     const [players, setPlayers] = useState<Player[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string>('');
-    const [seeker, setSeeker] = useState<string | null>(null);  // Track the selected Seeker
-    const navigate = useNavigate();  // For navigating away when leaving the lobby
+    const [seeker, setSeeker] = useState<string | null>(null);
+    const navigate = useNavigate();
+
+    // Sanitize email by taking only the part before "@"
+    const sanitizeEmail = (email: string): string => {
+        return email.slice(0, email.indexOf("@"));
+    };
 
     useEffect(() => {
-        // Emit join-room event when the player enters the lobby page
-        if (user && roomCode) {
-            socket.emit('join-room', user.email, roomCode); // Emit join-room with email and roomCode
+        if (!user || !roomCode) {
+            // setError("User or roomCode is undefined.");
+            // setLoading(false);
+            return;
         }
 
-        // Listen for the `game-started` event to redirect to the game page
-        socket.on('game-started', (data) => {
-            setSeeker(data.seeker);
-            // Redirect to the game page once the game starts
-            navigate(`/game/${roomCode}`);
-        });
+        const sanitizedEmail = sanitizeEmail(user.email);
+        const playerRef = ref(realtimeDb, `rooms/${roomCode}/players/${sanitizedEmail}`);
 
-        // Listen for the `player-status` event from the server
-        socket.on('player-status', (playerStatus: { email: string; roomCode: string | null; status: 'connected' | 'disconnected' }) => {
-            setPlayers((prevPlayers) => {
-                const updatedPlayers = prevPlayers.map((player) =>
-                    player.email === playerStatus.email
-                        ? { ...player, status: playerStatus.status }  // Update status if player already exists
-                        : player
-                );
+        console.log("Setting player in the database:", playerRef); // Debug log
 
-                // If player is new, add them to the list
-                if (!prevPlayers.some((player) => player.email === playerStatus.email)) {
-                    updatedPlayers.push({ email: playerStatus.email, status: playerStatus.status });
-                }
-
-                return updatedPlayers;
-            });
-        });
-
-        // Fetch room data from Firestore
-        const q = query(collection(db, 'rooms'), where('name', '==', roomCode));
-        const unsubscribe = onSnapshot(q, (querySnapshot) => {
-            if (querySnapshot.empty) {
-                setError('Room not found');
+        // Attempt to set player in Realtime Database
+        set(playerRef, { email: user.email, status: 'connected' })
+            .then(() => {
+                console.log("Player set successfully.");
+                setError("")
+            })
+            .catch((error) => {
+                console.error("Error adding player to database:", error);
+                setError("Failed to join the lobby. Please check your network or database permissions.");
                 setLoading(false);
-                return;
+            });
+
+        // Listen for changes to player statuses
+        const playersRef = ref(realtimeDb, `rooms/${roomCode}/players`);
+        const playersListener = onValue(playersRef, (snapshot) => {
+            const playersData = snapshot.val();
+            console.log("Players data retrieved:", playersData); // Debug log
+
+            if (playersData) {
+                const updatedPlayers = Object.values(playersData) as Player[];
+                setPlayers(updatedPlayers);
             }
+            setLoading(false);
+        }, (error) => {
+            console.error("Error listening to player data:", error);
+            setError("Error loading players. Please try again.");
+            setLoading(false);
+        });
 
-            querySnapshot.forEach((doc) => {
-                const roomData = doc.data();
-                const playerList = roomData.players || [];
-                setPlayers(playerList.map((email: string) => ({ email, status: 'connected' })));
-                setLoading(false);
-            });
+        // Listen for game start
+        const gameRef = ref(realtimeDb, `rooms/${roomCode}/gameStarted`);
+        const gameListener = onValue(gameRef, (snapshot) => {
+            const gameStarted = snapshot.val();
+            console.log("Game started status:", gameStarted); // Debug log
+            if (gameStarted) {
+                navigate(`/game/${roomCode}`);
+            }
         });
 
         return () => {
-            unsubscribe();
-            socket.off('player-status');  // Clean up listener on unmount
-            socket.off('game-started');   // Clean up listener on unmount
+            remove(playerRef).catch((error) => console.error("Error removing player:", error));
+            playersListener();
+            gameListener();
         };
-    }, [roomCode, user]);
+    }, [roomCode, user, navigate]);
 
     const handleLeaveLobby = () => {
-        // Emit 'leave-lobby' when the user leaves the lobby
         if (user && roomCode) {
-            socket.emit('leave-lobby', user.email); // Emit leave-lobby event to server to remove the player from DB
+            const sanitizedEmail = sanitizeEmail(user.email);
+            const playerRef = ref(realtimeDb, `rooms/${roomCode}/players/${sanitizedEmail}`);
+            remove(playerRef).catch((error) => console.error("Error removing player:", error));
         }
-        navigate('/');  // Navigate away from the Lobby page (to Main page or any other page)
+        navigate('/');
     };
 
-    const handleStartGame = () => {
-        // Choose a random Seeker
+    const handleStartGame = async () => {
+        if (players.length === 0) {
+            setError("No players in the lobby to start the game.");
+            return;
+        }
+
         const randomSeeker = players[Math.floor(Math.random() * players.length)].email;
         setSeeker(randomSeeker);
 
-        // Emit 'start-game' event to the server to start the game and notify everyone
-        socket.emit('start-game', roomCode);
+        const roomRef = ref(realtimeDb, `rooms/${roomCode}`);
+        try {
+            await update(roomRef, {
+                gameStarted: true,
+                seeker: randomSeeker,
+                players
+            });
+        } catch (error) {
+            console.error("Error starting the game:", error);
+            setError("Failed to start the game. Please try again.");
+        }
     };
 
     return (

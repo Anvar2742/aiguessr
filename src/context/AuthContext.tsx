@@ -1,5 +1,5 @@
 // src/context/AuthContext.tsx
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { auth, onAuthStateChanged } from '../firebase';
 
 interface AuthContextProps {
@@ -7,9 +7,13 @@ interface AuthContextProps {
     setUser: React.Dispatch<React.SetStateAction<any>>;
 }
 
+interface AuthProviderProps {
+    children: ReactNode; // Allows children as a prop
+}
+
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
-export const AuthProvider: React.FC = ({ children }) => {
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<any>(null);
 
     useEffect(() => {

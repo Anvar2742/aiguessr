@@ -40,7 +40,7 @@ const Chat: React.FC<ChatProps> = ({ to, messages, sendMessage, seeker }) => {
                         onChange={(e) => setMessage(e.target.value)}
                     />
                     <button
-                        className={`send-btn p-2 text-white rounded-r-lg ${messages[messages.length - 1]?.from === user.email ? "pointer-events-none bg-gray-400" : "bg-blue-500"}`}
+                        className={`send-btn p-2 text-white rounded-r-lg ${messages[messages.length - 1]?.from === user.email ? "bg-blue-500" : "bg-blue-500"}`}
                         onClick={handleMessage}
                     >
                         Send

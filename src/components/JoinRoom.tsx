@@ -1,9 +1,8 @@
-// src/components/JoinRoom.tsx (Updated to use socket for joining)
-import React, { useState, useEffect } from 'react';
-import { db, query, where, getDocs, collection, updateDoc, doc } from '../firebase';
+import React, { useState } from 'react';
+import { ref, get, update } from 'firebase/database';
+import { realtimeDb } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { socket } from '../socket';
 
 const JoinRoom: React.FC = () => {
     const { user } = useAuth();
@@ -21,30 +20,23 @@ const JoinRoom: React.FC = () => {
         setLoading(true);
         setError('');
         try {
-            const q = query(collection(db, 'rooms'), where('name', '==', roomCode));
-            const querySnapshot = await getDocs(q);
+            const roomRef = ref(realtimeDb, `rooms/${roomCode}`);
+            const snapshot = await get(roomRef);
 
-            if (querySnapshot.empty) {
+            if (!snapshot.exists()) {
                 setError('Room not found');
                 return;
             }
 
-            querySnapshot.forEach(async (doc) => {
-                const roomRef = doc.ref;
-                const roomData = doc.data();
-                const players = roomData.players || [];
+            const roomData = snapshot.val();
+            const players = roomData.players ? Object.values(roomData.players) : []; // Convert players to array
 
-                if (players.includes(user?.email)) {
-                    setError('You are already in this room');
-                    return;
-                }
+            if (players.includes(user?.email)) {
+                setError('You are already in this room');
+                return;
+            }
 
-                players.push(user?.email);
-                await updateDoc(roomRef, { players });
-
-                navigate(`/lobby/${roomCode}`);
-            });
-
+            navigate(`/lobby/${roomCode}`);
             setRoomCode('');
         } catch (error: any) {
             setError(error.message);
