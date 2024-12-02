@@ -21,12 +21,13 @@ const Chat: React.FC<ChatProps> = ({ to, messages, sendMessage, seeker, i, guess
     const { user } = useAuth();
     const [canSendMessage, setCanSendMessage] = useState<boolean>(false);
     const [currentTurn, setCurrentTurn] = useState<string | null>(null); // Track whose turn it is
-    const messagesEndRef = useRef<HTMLDivElement | null>(null);
+    const chatBoxRef = useRef<HTMLDivElement | null>(null);
 
     // Auto-scroll to the last message when `messages` changes
     useEffect(() => {
-        if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        if (chatBoxRef.current) {
+            // Calculate the scroll position to reach the last message
+            chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
         }
 
         setMsgPoints(5 - messages.filter((msg) => msg.from === user.email).length)
@@ -71,7 +72,7 @@ const Chat: React.FC<ChatProps> = ({ to, messages, sendMessage, seeker, i, guess
     return (
         <div className="chat-container bg-gray-100 p-4 rounded-lg shadow-xl mt-10 mx-5 border border-gray-500 relative">
             <div className="flex justify-between items-center mb-5 px-5">
-                <h3 className="font-bold">Chat {i + 1}. Chat key: {chatKey}</h3>
+                <h3 className="font-bold">Chat {i + 1}.</h3>
                 {
                     seeker === user?.email && <div className="msg-count absolute w-8 h-8 flex justify-center items-center text-white font-bold text-lg pointer-events-none rounded-full bg-green-700 -right-2 -top-2">
                         {5 - messages.filter((msg) => msg.from === user.email).length}
@@ -87,41 +88,39 @@ const Chat: React.FC<ChatProps> = ({ to, messages, sendMessage, seeker, i, guess
                     </button>
                 }
             </div>
-            <div className="messages overflow-y-auto max-h-96 mb-4 p-4 bg-white border rounded-lg min-h-16">
+            <div ref={chatBoxRef} className="messages overflow-y-auto max-h-96 mb-4 p-4 bg-white border rounded-lg min-h-16">
                 {messages.length ? messages.map((msg, i) => (
                     <div
                         key={msg.chatKey + i}
                         className={`message p-1 mb-2 rounded-lg flex max-w-[80%] ${msg.from === user?.email
                             ? 'bg-blue-100 text-blue-800 ml-auto'
                             : msg.from === seeker && msg.to !== user?.email
-                            ? 'bg-orange-200 text-gray-800 ml-auto' 
-                            : 'bg-gray-200 text-gray-800 mr-auto'
+                                ? 'bg-orange-200 text-gray-800 ml-auto'
+                                : 'bg-gray-200 text-gray-800 mr-auto'
                             }`}
                     >
                         <strong>{msg.from === user?.email ? <img src={botLogo} className="min-w-6 min-h-6 w-6 h-6" alt="" /> : <img src={hiderLogo} className="min-w-4 min-h-6 w-4 h-6" alt="" />}</strong>
-                        <p className="ml-4">{msg.message}</p>
+                        <p className="ml-4 break-all">{msg.message}</p>
                     </div>
-                )) : <p className='p-2 text-gray-500'>You'll see your messages here...</p>}
-                {/* Invisible element for auto-scroll */}
-                <div ref={messagesEndRef}></div>
+                )) : <p className='p-2 text-gray-500'>Сообщения будут здесь.</p>}
             </div>
 
             {/* Turn indication */}
             <div className="turn-indicator text-center text-sm text-gray-600">
-                {currentTurn && currentTurn === user?.email
-                    ? "It's your turn to send a message!"
+                {!(msgPoints === 0 && seeker === user?.email) ? currentTurn && currentTurn === user?.email
+                    ? "Ваша очередь."
                     : currentTurn
-                        ? `It's not your turn.`
-                        : 'Waiting for the first message...'}
+                        ? `Не ваш черед.`
+                        : 'Еще нет никаких сообщений.' : ""}
             </div>
 
             {/* Message input */}
-            {(canSendMessage || (msgPoints === 0 && seeker === user?.email)) && (
+            {((canSendMessage && !(msgPoints === 0 && seeker === user?.email))) && (
                 <form className="input-area flex items-center" onSubmit={handleMessage}>
                     <input
                         type="text"
                         className="input-message w-full p-2 border rounded-l-lg"
-                        placeholder="Type a message..."
+                        placeholder="Ваше сообщение"
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
                     />
@@ -136,9 +135,11 @@ const Chat: React.FC<ChatProps> = ({ to, messages, sendMessage, seeker, i, guess
 
             {/* Message restriction if it's not the user's turn */}
             <p className="text-gray-500 mt-10">
-                {!canSendMessage ? (
-                    "You can only send one message per turn!"
-                ) : msgPoints === 0 && seeker === user?.email ? "You need to make a guess." : ""}
+                {msgPoints === 0 && seeker === user?.email 
+                ? "Запас сообщений исчерпан." 
+                : !canSendMessage 
+                ? "1 черед = 1 сообщение."
+                : ""}
             </p>
         </div>
     );
