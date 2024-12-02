@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ref, get, update } from 'firebase/database';
+import { ref, get } from 'firebase/database';
 import { realtimeDb } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';

@@ -1,16 +1,23 @@
-// src/components/CreateRoom.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom'; // Using react-router for navigation
 
 const CreateRoom: React.FC = () => {
-	const [roomName, setRoomName] = useState('');
+	const [roomCode, setRoomCode] = useState('');
 	const [error, setError] = useState('');
 	const [loading, setLoading] = useState(false);
 	const navigate = useNavigate();
 
+	function generateRoomCode() {
+		return Math.random().toString(36).substring(2, 8).toUpperCase();
+	}
+
+	useEffect(() => {
+		setRoomCode(generateRoomCode())
+	}, [])
+
 	const handleCreateRoom = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!roomName) {
+		if (!roomCode) {
 			setError('Room name is required');
 			return;
 		}
@@ -20,7 +27,7 @@ const CreateRoom: React.FC = () => {
 			// Create a new room document in Firestore
 
 			// Navigate to the newly created room's lobby page
-			navigate(`/lobby/${roomName}`); // Redirect to lobby using room name as code
+			navigate(`/lobby/${roomCode}`); // Redirect to lobby using room name as code
 		} catch (error: any) {
 			setError(error.message);
 		} finally {
@@ -28,21 +35,12 @@ const CreateRoom: React.FC = () => {
 		}
 	};
 
+	if (!roomCode) return;
 	return (
 		<div className="max-w-sm mx-auto p-6 bg-white shadow-lg rounded-lg">
 			<h2 className="text-2xl font-semibold text-center text-gray-800 mb-6">Create a Room</h2>
+			<p className='mb-5'>Room code: <b>{roomCode}</b></p>
 			<form onSubmit={handleCreateRoom} className="space-y-4">
-				<div>
-					<label htmlFor="roomName" className="block text-sm font-medium text-gray-700">Room Name</label>
-					<input
-						type="text"
-						id="roomName"
-						value={roomName}
-						onChange={(e) => setRoomName(e.target.value)}
-						required
-						className="w-full px-4 py-2 mt-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-					/>
-				</div>
 				{error && <p className="text-red-500 text-sm">{error}</p>}
 				<button
 					type="submit"

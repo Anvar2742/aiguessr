@@ -11,3 +11,14 @@ export const shuffleArray = (array: any[]) => {
 export const getChatKey = (from: string, to: string) => {
     return [from, to].sort((a, b) => a.localeCompare(b)).join('-').toLowerCase();
 }
+
+// Sanitize email by taking only the part before "@"
+export const sanitizeEmail = (email: string): string => {
+    return email.replace(/@|\./g, '_');
+};
+
+export interface Player {
+    email: string;
+    status: 'connected' | 'disconnected';
+    state: "dead" | "alive";
+}

@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { auth, createUserWithEmailAndPassword } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const Signup: React.FC = () => {
     const { setUser } = useAuth();
@@ -9,6 +10,7 @@ const Signup: React.FC = () => {
     const [password, setPassword] = useState<string>('');
     const [error, setError] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(false);
+	const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -17,7 +19,8 @@ const Signup: React.FC = () => {
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             setUser(userCredential.user); // Set the user in context
-            alert('Signup successful!');
+            navigate("/")
+            // alert('Signup successful!');
         } catch (error: any) {
             setError(error.message);
         } finally {

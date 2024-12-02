@@ -31,24 +31,27 @@ import {
 } from 'firebase/database';
 
 const firebaseConfig = {
-    apiKey: "AIzaSyDLEpapzE_aaPprvvu9I3NLxQngqwesXAs",
-    authDomain: "aiguessr-v1.firebaseapp.com",
-    // databaseURL: "https://aiguessr-v1-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "aiguessr-v1",
-    storageBucket: "aiguessr-v1.firebasestorage.app",
-    messagingSenderId: "181640497289",
-    appId: "1:181640497289:web:ec33db88e68502eb9b9e58",
-    measurementId: "G-V240NXPKX4",
-    databaseURL: "http://127.0.0.1:4000"
-  };
+    apiKey: "AIzaSyATHUXAFdVoaFZqTncmorQcmW0OdaWAgic",
+    authDomain: "aiguessr-vf.firebaseapp.com",
+    databaseURL: "https://aiguessr-vf-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "aiguessr-vf",
+    storageBucket: "aiguessr-vf.firebasestorage.app",
+    messagingSenderId: "483659388718",
+    appId: "1:483659388718:web:dbbb911107ce5fc1224cbf",
+    measurementId: "G-TLTL3RZVWX",
+    // databaseURL: 'http://127.0.0.1:5001?ns=aiguessr-vf', // Local emulator URL
+};
 
 const app = initializeApp(firebaseConfig);
+
+// Initialize services
 const auth = getAuth(app);
 const db = getFirestore(app);
 const realtimeDb = getDatabase(app); // Initialize Realtime Database
 
 // Connect to emulators if running locally
 if (window.location.hostname === 'localhost') {
+    console.log('Connecting to Firebase emulators...');
     connectAuthEmulator(auth, 'http://localhost:9099');
     connectFirestoreEmulator(db, 'localhost', 8080);
     connectDatabaseEmulator(realtimeDb, 'localhost', 9000);

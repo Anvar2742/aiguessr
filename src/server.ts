@@ -22,7 +22,7 @@ app.use(cors({
 app.use(express.json());
 
 // Sample players, game state tracking (This will reset every time the function is re-deployed)
-let players: { [key: string]: { email: string; roomCode: string | null; status: string } } = {};
+let players: { [key: string]: { email: string; roomCode: string | null; status: string, state: string; } } = {};
 let gameStarted: boolean = false;
 let seeker: string | null = null;
 
@@ -89,7 +89,7 @@ app.post('/chatgpt', async (req, res) => {
 // Player join room
 app.post('/join-room', (req, res) => {
     const { email, roomCode } = req.body;
-    players[email] = { email, roomCode, status: 'connected' };
+    players[email] = { email, roomCode, status: 'connected', state: "alive" };
     res.json({ message: `${email} joined room ${roomCode}` });
 });
 

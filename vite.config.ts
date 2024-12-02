@@ -5,7 +5,10 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: '0.0.0.0', // Binds to all network interfaces
+    host: true, // Binds to all network interfaces
     port: 3000 // Specify a port if you prefer something specific
-  }
+  },
+  build: {
+    outDir: 'public', // Specify your desired output directory
+  },
 })

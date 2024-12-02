@@ -7,6 +7,8 @@ import GamePage from './components/GamePage';  // Import the GamePage component
 import Signup from './components/Signup';
 import Login from './components/Login';
 import AppContent from './components/AppContent';
+import ResetPassword from './components/ResetPassword';
+import AdminPage from './components/AdminPage';
 
 const App: React.FC = () => {
   return (
@@ -19,6 +21,8 @@ const App: React.FC = () => {
           <Route path="/game/:roomCode" element={<GamePage />} /> {/* New route for game page */}
           <Route path="/signup" element={<Signup />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/resetpassword" element={<ResetPassword />} />
+          <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </Router>
     </AuthProvider>

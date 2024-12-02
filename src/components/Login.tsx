@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Login: React.FC = () => {
     const { setUser } = useAuth();
@@ -10,6 +11,7 @@ const Login: React.FC = () => {
     const [password, setPassword] = useState<string>('');
     const [error, setError] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(false);
+    const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -18,7 +20,8 @@ const Login: React.FC = () => {
         try {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             setUser(userCredential.user); // Set the user in context
-            alert('Login successful!');
+            navigate("/")
+            // alert('Login successful!');
         } catch (error: any) {
             setError(error.message);
         } finally {
@@ -61,6 +64,11 @@ const Login: React.FC = () => {
                     {loading ? 'Logging in...' : 'Login'}
                 </button>
             </form>
+            <div className="mt-5 hidden">
+                <Link to="/resetpassword" className="text-blue-500 hover:underline">
+                    Forgot password?
+                </Link>{' '}
+            </div>
         </div>
     );
 };
