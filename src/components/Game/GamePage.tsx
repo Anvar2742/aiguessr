@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { ref, update, onValue, push, serverTimestamp, off, remove, get } from 'firebase/database';
-import { realtimeDb } from '../firebase';
+import { realtimeDb } from '../../firebase';
 import { useNavigate, useParams } from 'react-router-dom';
 import Chat from './Chat';
-import { useAuth } from '../context/AuthContext';
-import { getChatKey, Player, shuffleArray } from '../utils/utils';
+import { useAuth } from '../../context/AuthContext';
+import { getChatKey, Player, shuffleArray } from '../../utils/utils';
 import botLogo from "./../assets/Union.png"
 import hiderLogo from "./../assets/Subtract.png"
 

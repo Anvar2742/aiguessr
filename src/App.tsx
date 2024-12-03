@@ -1,13 +1,13 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import JoinRoom from './components/JoinRoom';
-import Lobby from './components/Lobby';
-import GamePage from './components/GamePage';  // Import the GamePage component
-import Signup from './components/Signup';
-import Login from './components/Login';
+import JoinRoom from './components/Lobby/JoinRoom';
+import Lobby from './components/Lobby/Lobby';
+import GamePage from './components/Game/GamePage';  // Import the GamePage component
+import Signup from './components/Auth/Signup';
+import Login from './components/Auth/Login';
 import AppContent from './components/AppContent';
-import ResetPassword from './components/ResetPassword';
+import ResetPassword from './components/Auth/ResetPassword';
 import AdminPage from './components/AdminPage';
 
 const App: React.FC = () => {

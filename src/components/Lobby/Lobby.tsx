@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { realtimeDb, ref, onValue, update, set, remove } from '../firebase';
-import { useAuth } from '../context/AuthContext';
-import { Player, sanitizeEmail } from '../utils/utils';
+import { realtimeDb, ref, onValue, update, set, remove } from '../../firebase';
+import { useAuth } from '../../context/AuthContext';
+import { Player, sanitizeEmail } from '../../utils/utils';
 
 const Lobby: React.FC = () => {
     const { user } = useAuth();

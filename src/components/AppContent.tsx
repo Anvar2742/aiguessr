@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import CreateRoom from "./CreateRoom";
-import JoinRoom from "./JoinRoom";
+import CreateRoom from "./Lobby/CreateRoom";
+import JoinRoom from "./Lobby/JoinRoom";
 import { signOut } from "firebase/auth";
 import { useAuth } from "../context/AuthContext";
 import { useState } from "react";
