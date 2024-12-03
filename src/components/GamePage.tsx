@@ -284,22 +284,20 @@ const GamePage = () => {
             <div className='mb-10'>
                 <h4>Players:</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {players.map((player, i) => (
-                        player?.email !== user?.email && (
-                            <Chat
-                                key={player?.email}
-                                to={player?.email}
-                                seeker={seeker}
-                                messages={messages.filter(
-                                    (msg) => msg.chatKey === getChatKey(player?.email === seeker ? user?.email : seeker, player?.email)
-                                )}
-                                sendMessage={sendMessage}
-                                i={i}
-                                guessTime={guessTime}
-                                handleGuess={handleGuess}
-                                chatKey={getChatKey(player?.email === seeker ? user?.email : seeker, player?.email)}
-                            />
-                        )
+                    {players.filter(player => player?.email !== user?.email).map((player, i) => (
+                        <Chat
+                            key={player?.email}
+                            to={player?.email}
+                            seeker={seeker}
+                            messages={messages.filter(
+                                (msg) => msg.chatKey === getChatKey(player?.email === seeker ? user?.email : seeker, player?.email)
+                            )}
+                            sendMessage={sendMessage}
+                            i={i}
+                            guessTime={guessTime}
+                            handleGuess={handleGuess}
+                            chatKey={getChatKey(player?.email === seeker ? user?.email : seeker, player?.email)}
+                        />
                     ))}
                 </div>
                 {seeker === user?.email && <button
@@ -309,14 +307,14 @@ const GamePage = () => {
                     {guessTime ? "Don't know" : "I found the bot"}
                 </button>}
             </div>
-            <div className="overflow-hidden fixed -right-[200px] -bottom-[100px] -rotate-[35deg] sm:w-[600px] w-[500px] sm:h-[300px] h-[200px] bg-gray-800 text-white flex justify-center">
+            <div className="overflow-hidden fixed -right-[200px] -bottom-[120px] -rotate-[35deg] sm:w-[550px] w-[500px] sm:h-[300px] h-[200px] bg-gray-800 text-white flex justify-center">
                 <div className="pt-5 px-5 text-center z-10">
                     <b className='sm:text-3xl text-lg'>Your role:</b>
-                    <p className={`sm:text-6xl text-xl font-extrabold capitalize ${seeker === user?.email ? "text-red-600" : "text-green-600"}`}>
+                    <p className={`sm:text-4xl text-xl font-extrabold capitalize ${seeker === user?.email ? "text-red-600" : "text-green-600"}`}>
                         {seeker === user?.email ? "seeker" : "hider"}
                     </p>
                 </div>
-                <div className="rotate-[35deg] absolute w-[30%] bottom-[50px] right-[150px]">
+                <div className="rotate-[35deg] absolute w-[30%] bottom-[110px] right-[150px]">
                     {seeker === user?.email ? <img src={botLogo} alt="" /> : <img src={hiderLogo} />}
                 </div>
             </div>

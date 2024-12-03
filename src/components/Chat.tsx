@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, FormEvent } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Message } from './GamePage';
 import botLogo from "./../assets/union_black.png"
@@ -15,7 +15,7 @@ interface ChatProps {
     chatKey: string;
 }
 
-const Chat: React.FC<ChatProps> = ({ to, messages, sendMessage, seeker, i, guessTime, handleGuess, chatKey }) => {
+const Chat: React.FC<ChatProps> = ({ to, messages, sendMessage, seeker, i, guessTime, handleGuess }) => {
     const [message, setMessage] = useState<string>('');
     const [msgPoints, setMsgPoints] = useState<number>();
     const { user } = useAuth();
@@ -29,7 +29,7 @@ const Chat: React.FC<ChatProps> = ({ to, messages, sendMessage, seeker, i, guess
             // Calculate the scroll position to reach the last message
             chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
         }
-
+        
         setMsgPoints(5 - messages.filter((msg) => msg.from === user.email).length)
     }, [messages]);
 
@@ -59,18 +59,24 @@ const Chat: React.FC<ChatProps> = ({ to, messages, sendMessage, seeker, i, guess
             setCurrentTurn(turn);
         }
     }, [messages, seeker, user?.email]);
-
-    const handleMessage = (e: FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        if (message.trim() && canSendMessage) {
+    
+    const handleKeyDown = (event: { key: string; shiftKey: any; preventDefault: () => void; }) => {
+        if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault(); // Prevent newline insertion
+            handleMessage();
+        }
+    };
+    const handleMessage = () => {
+        if (message.trim() && canSendMessage && message.length < 60) {
             // Send the message and switch turns
             sendMessage(to, message);
             setMessage('');
         }
     };
 
+
     return (
-        <div className="chat-container bg-gray-100 p-4 rounded-lg shadow-xl mt-10 mx-5 border border-gray-500 relative">
+        <div className={`chat-container bg-gray-100 p-4 rounded-lg shadow-xl mt-10 mx-5 border border-gray-500 relative ${message.length >= 60 ? "border-red-300 border-2 shadow-red-300 shadow-lg" : ""}`}>
             <div className="flex justify-between items-center mb-5 px-5">
                 <h3 className="font-bold">Chat {i + 1}.</h3>
                 {
@@ -100,7 +106,7 @@ const Chat: React.FC<ChatProps> = ({ to, messages, sendMessage, seeker, i, guess
                             }`}
                     >
                         <strong>{msg.from === user?.email ? <img src={botLogo} className="min-w-6 min-h-6 w-6 h-6" alt="" /> : <img src={hiderLogo} className="min-w-4 min-h-6 w-4 h-6" alt="" />}</strong>
-                        <p className="ml-4 break-all">{msg.message}</p>
+                        <p className="ml-4">{msg.message}</p>
                     </div>
                 )) : <p className='p-2 text-gray-500'>Сообщения будут здесь.</p>}
             </div>
@@ -116,30 +122,33 @@ const Chat: React.FC<ChatProps> = ({ to, messages, sendMessage, seeker, i, guess
 
             {/* Message input */}
             {((canSendMessage && !(msgPoints === 0 && seeker === user?.email))) && (
-                <form className="input-area flex items-center" onSubmit={handleMessage}>
-                    <input
-                        type="text"
-                        className="input-message w-full p-2 border rounded-l-lg"
-                        placeholder="Ваше сообщение"
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                    />
-                    <button
-                        className="send-btn p-2 text-white rounded-r-lg bg-blue-500"
-                        type="submit"
-                    >
-                        Send
-                    </button>
-                </form>
+                <div>
+                    <form className="input-area flex" onSubmit={(e) => e.preventDefault()}>
+                        <textarea
+                            className="input-message w-full p-2 border rounded-l-lg resize-none"
+                            placeholder="Ваше сообщение"
+                            onKeyDown={handleKeyDown}
+                            value={message}
+                            onChange={(e) => message.length > 60 && e.target.value.length > message.length ? setMessage(prevMsg => prevMsg) : setMessage(e.target.value)}
+                        ></textarea>
+                        <button
+                            className={`send-btn p-2 text-white rounded-r-lg bg-blue-500 ${message.length > 60 ? "border-red-300 border-2 shadow-red-300 shadow-lg" : ""}`}
+                            onClick={handleMessage}
+                        >
+                            Send
+                        </button>
+                    </form>
+                    <p>{60 - message.length < 0 ? 0 : 60 - message.length}</p>
+                </div>
             )}
 
             {/* Message restriction if it's not the user's turn */}
             <p className="text-gray-500 mt-10">
-                {msgPoints === 0 && seeker === user?.email 
-                ? "Запас сообщений исчерпан." 
-                : !canSendMessage 
-                ? "1 черед = 1 сообщение."
-                : ""}
+                {msgPoints === 0 && seeker === user?.email
+                    ? "Запас сообщений исчерпан."
+                    : !canSendMessage
+                        ? "1 черед = 1 сообщение."
+                        : ""}
             </p>
         </div>
     );

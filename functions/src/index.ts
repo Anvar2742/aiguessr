@@ -96,24 +96,38 @@ exports.sendMessageToGPT = onRequest({ cors, region: "europe-west1" }, async (re
 
 // Helper function to simulate GPT response
 async function sendToChatGPT(message: string): Promise<{ reply: string }> {
-
   const endpoint = 'https://api.openai.com/v1/chat/completions';
-  console.log(message);
 
   try {
+    // Simulate per-character typing for the user's message
+    // console.log("User is typing...");
+    for (const _char of message) {
+      const charDelay = Math.random() * (25 - 5) + 5; // Random delay between 5ms and 15ms
+      await new Promise((resolve) => setTimeout(resolve, charDelay));
+    }
+    // console.log("User finished typing.");
+
+    // Simulate ChatGPT "thinking" delay
+    const thinkingDelay = 1000 + Math.random() * 1000; // Random delay between 1s to 2s
+    await new Promise((resolve) => setTimeout(resolve, thinkingDelay));
+
+    // Fetch the system prompt
     const snapshot = await db.ref('chatGPT/prompt').once('value');
     const prompt = snapshot.val();
+    console.log((Math.random() * (1.4 - 1.0) + 1.0).toFixed(2));
+    
+
+    // Send the user's message to the ChatGPT API
     const response = await axios.post(
       endpoint,
       {
-        model: 'gpt-4', // Use 'gpt-4' or 'gpt-3.5-turbo'
+        model: 'gpt-4',
         messages: [
-          {
-            role: 'system', content: prompt},
+          { role: 'system', content: prompt },
           { role: 'user', content: message },
         ],
         max_tokens: 150,
-        temperature: 1.2,
+        temperature: +((Math.random() * (1.3 - 1.1) + 1.1).toFixed(2)),
       },
       {
         headers: {
@@ -123,13 +137,24 @@ async function sendToChatGPT(message: string): Promise<{ reply: string }> {
       }
     );
 
+    // Get ChatGPT's reply
     const reply = response.data.choices[0]?.message?.content.trim() || 'No response from ChatGPT';
+
+    // Simulate per-character typing for ChatGPT's reply
+    // console.log("ChatGPT is typing...");
+    for (const _char of reply) {
+      const charDelay = Math.random() * (25 - 5) + 5; // Random delay between 5ms and 15ms
+      await new Promise((resolve) => setTimeout(resolve, charDelay));
+    }
+    // console.log("ChatGPT finished typing.");
+
     return { reply };
   } catch (error: any) {
     console.error('Error communicating with OpenAI API:', error.response?.data || error.message);
     throw new Error('Failed to fetch response from ChatGPT API');
   }
 }
+
 
 exports.getPrompt = onRequest({ cors, region: "europe-west1" }, async (req, res) => {
 
