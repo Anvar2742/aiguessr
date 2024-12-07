@@ -6,6 +6,18 @@ export const shuffleArray = (array: any[]) => {
     return array
 };
 
+export const shuffleRecord = <T>(record: Record<string, T>): Record<string, T> => {
+    const entries = Object.entries(record); // Convert record to an array of key-value pairs
+
+    for (let i = entries.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [entries[i], entries[j]] = [entries[j], entries[i]]; // Swap elements
+    }
+
+    return Object.fromEntries(entries); // Convert the shuffled array back to a record
+};
+
+
 
 
 export const getChatKey = (from: string, to: string) => {
@@ -22,3 +34,8 @@ export interface Player {
     status: 'connected' | 'disconnected';
     state: "dead" | "alive";
 }
+
+export const isInvalidEmailAndContainsChatGPT = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Basic email regex
+    return !emailRegex.test(email) && email.toLowerCase().includes("chatgpt");
+};

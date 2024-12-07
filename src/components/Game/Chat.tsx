@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Message } from './GamePage';
-import botLogo from "./../assets/union_black.png"
-import hiderLogo from "./../assets/Subtract.png"
+import botLogo from "../../assets/union_black.png"
+import hiderLogo from "../../assets/Subtract.png"
 
 interface ChatProps {
     to: string;
@@ -11,11 +11,11 @@ interface ChatProps {
     seeker: string | null;
     i: number;
     guessTime: boolean;
-    handleGuess: (guessEmail: string) => void;
+    fireGuess: (guessEmail: string) => void;
     chatKey: string;
 }
 
-const Chat: React.FC<ChatProps> = ({ to, messages, sendMessage, seeker, i, guessTime, handleGuess }) => {
+const Chat: React.FC<ChatProps> = ({ to, messages, sendMessage, seeker, i, guessTime, fireGuess }) => {
     const [message, setMessage] = useState<string>('');
     const [msgPoints, setMsgPoints] = useState<number>();
     const { user } = useAuth();
@@ -29,8 +29,8 @@ const Chat: React.FC<ChatProps> = ({ to, messages, sendMessage, seeker, i, guess
             // Calculate the scroll position to reach the last message
             chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
         }
-        
-        setMsgPoints(5 - messages.filter((msg) => msg.from === user.email).length)
+
+        setMsgPoints(5 - messages.filter((msg) => msg.from === seeker).length)
     }, [messages]);
 
     // Determine turn logic based on the last message
@@ -59,7 +59,7 @@ const Chat: React.FC<ChatProps> = ({ to, messages, sendMessage, seeker, i, guess
             setCurrentTurn(turn);
         }
     }, [messages, seeker, user?.email]);
-    
+
     const handleKeyDown = (event: { key: string; shiftKey: any; preventDefault: () => void; }) => {
         if (event.key === "Enter" && !event.shiftKey) {
             event.preventDefault(); // Prevent newline insertion
@@ -73,22 +73,30 @@ const Chat: React.FC<ChatProps> = ({ to, messages, sendMessage, seeker, i, guess
             setMessage('');
         }
     };
+    // console.log(messages);
 
 
     return (
-        <div className={`chat-container bg-gray-100 p-4 rounded-lg shadow-xl mt-10 mx-5 border border-gray-500 relative ${message.length >= 60 ? "border-red-300 border-2 shadow-red-300 shadow-lg" : ""}`}>
+        <div className={`chat-container bg-gray-100 p-4 rounded-lg shadow-xl mt-10 mx-5 border border-gray-500 relative ${message.length >= 60 ? "border-red-300 border-2 shadow-red-300 shadow-lg" : ""} ${(to === seeker && seeker !== user?.email) ? "bg-blue-200" : ""}`}>
             <div className="flex justify-between items-center mb-5 px-5">
-                <h3 className="font-bold">Chat {i + 1}.</h3>
+                <h3 className="font-bold">Chat {i + 1} {(to === seeker && seeker !== user?.email) && "- Your chat"}</h3>
+                {seeker !== user?.email ? <span className={`fixed left-10 bottom-10 bg-blue-600 p-2 px-3 rounded-xl font-bold text-white transition-all duration-200 ${currentTurn === user?.email ? "" : "-translate-x-[200%]"}`}>
+                    Чекай свой чат!
+                    <span className="flex h-3 w-3 -top-1 -right-1 absolute">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                    </span>
+                </span> : ""}
                 {
-                    seeker === user?.email && <div className="msg-count absolute w-8 h-8 flex justify-center items-center text-white font-bold text-lg pointer-events-none rounded-full bg-green-700 -right-2 -top-2">
-                        {5 - messages.filter((msg) => msg.from === user.email).length}
+                    <div className="msg-count absolute w-8 h-8 flex justify-center items-center text-white font-bold text-lg pointer-events-none rounded-full bg-green-700 -right-2 -top-2">
+                        {msgPoints}
                     </div>
                 }
                 {
                     guessTime &&
                     <button
                         className="send-btn p-2 text-white rounded-lg bg-blue-500"
-                        onClick={() => handleGuess(to)}
+                        onClick={() => fireGuess(to)}
                     >
                         Chat {i + 1} is AI.
                     </button>
@@ -112,12 +120,16 @@ const Chat: React.FC<ChatProps> = ({ to, messages, sendMessage, seeker, i, guess
             </div>
 
             {/* Turn indication */}
-            <div className="turn-indicator text-center text-sm text-gray-600">
-                {!(msgPoints === 0 && seeker === user?.email) ? currentTurn && currentTurn === user?.email
-                    ? "Ваша очередь."
-                    : currentTurn
-                        ? `Не ваш черед.`
-                        : 'Еще нет никаких сообщений.' : ""}
+            <div className="turn-indicator text-center text-sm text-gray-600 flex justify-between mb-2">
+                <p>{60 - message.length < 0 ? 0 : 60 - message.length}</p>
+                {(seeker === user?.email && msgPoints && msgPoints > 0) || (to === seeker && seeker !== user?.email) // see only your chat's turns
+                    ? messages.length > 0
+                        ? currentTurn && currentTurn === user?.email // your turn ?
+                            ? "Ваша очередь." // yes
+                            : `Не ваш черед.`
+                        : "В чате пусто."
+                    : ""
+                }
             </div>
 
             {/* Message input */}
@@ -138,7 +150,6 @@ const Chat: React.FC<ChatProps> = ({ to, messages, sendMessage, seeker, i, guess
                             Send
                         </button>
                     </form>
-                    <p>{60 - message.length < 0 ? 0 : 60 - message.length}</p>
                 </div>
             )}
 

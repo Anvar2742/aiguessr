@@ -9,6 +9,7 @@ import Login from './components/Auth/Login';
 import AppContent from './components/AppContent';
 import ResetPassword from './components/Auth/ResetPassword';
 import AdminPage from './components/AdminPage';
+import ProtectedRoute from './components/ProtectedRout';
 
 const App: React.FC = () => {
   return (
@@ -17,7 +18,15 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/" element={<AppContent />} />
           <Route path="/join-room" element={<JoinRoom />} />
-          <Route path="/lobby/:roomCode" element={<Lobby />} />
+          <Route
+            path="/lobby/:roomCode"
+            element={
+              <ProtectedRoute>
+                <Lobby />
+              </ProtectedRoute>
+            }
+          />
+          {/* <Route path="/lobby/:roomCode" element={<Lobby />} /> */}
           <Route path="/game/:roomCode" element={<GamePage />} /> {/* New route for game page */}
           <Route path="/signup" element={<Signup />} />
           <Route path="/login" element={<Login />} />

@@ -5,6 +5,7 @@ import { auth, onAuthStateChanged } from '../firebase';
 interface AuthContextProps {
     user: any;
     setUser: React.Dispatch<React.SetStateAction<any>>;
+    loading: boolean;
 }
 
 interface AuthProviderProps {
@@ -15,17 +16,19 @@ const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const [user, setUser] = useState<any>(null);
+    const [loading, setLoading] = useState<boolean>(true);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             setUser(user); // Updates user session state
+            setLoading(false);
         });
 
         return unsubscribe; // Cleanup when the component unmounts
     }, []);
 
     return (
-        <AuthContext.Provider value={{ user, setUser }}>
+        <AuthContext.Provider value={{ user, setUser, loading }}>
             {children}
         </AuthContext.Provider>
     );

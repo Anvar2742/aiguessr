@@ -7,7 +7,7 @@ import { Player, sanitizeEmail } from '../../utils/utils';
 const Lobby: React.FC = () => {
     const { user } = useAuth();
     const { roomCode } = useParams<{ roomCode: string }>();
-    const [players, setPlayers] = useState<Player[]>([]);
+    const [players, setPlayers] = useState<Record<string, Player>>({});
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string>('');
     // const [seeker, setSeeker] = useState<string | null>(null);
@@ -16,10 +16,17 @@ const Lobby: React.FC = () => {
     const [copySuccess, setCopySuccess] = useState<boolean>(false);
 
     useEffect(() => {
-        if (!user || !roomCode) {
-            return;
-        }
+        console.log(user);
 
+        if (!user) {
+            console.log("no auth");
+
+            // navigate("/")
+        }
+    }, [])
+
+    useEffect(() => {
+        if (!user || !roomCode) return
         const sanitizedEmail = sanitizeEmail(user.email);
         const playerRef = ref(realtimeDb, `rooms/${roomCode}/players/${sanitizedEmail}`);
 
@@ -36,42 +43,58 @@ const Lobby: React.FC = () => {
             });
 
         // Listen for changes to player statuses
-        const playersRef = ref(realtimeDb, `rooms/${roomCode}/players`);
-        const playersListener = onValue(playersRef, (snapshot) => {
-            const playersData = snapshot.val();
-            if (playersData) {
-                const updatedPlayers = Object.values(playersData) as Player[];
-                setPlayers(updatedPlayers);
+        const roomRef = ref(realtimeDb, `rooms/${roomCode}`);
+        const roomListener = onValue(
+            roomRef,
+            (snapshot) => {
+                const roomData = snapshot.val();
 
-                // If this is the first player, set them as the host
-                if (updatedPlayers.length === 1 && !host) {
-                    const firstPlayerEmail = updatedPlayers[0].email;
-                    setHost(firstPlayerEmail);
+                if (roomData) {
+                    // Update the players state
+                    const playersData = roomData.players || {};
+                    setPlayers(playersData);
+                    console.log("Players data updated:", playersData);
 
-                    // Save the host information in the database
-                    const roomRef = ref(realtimeDb, `rooms/${roomCode}`);
-                    update(roomRef, { host: firstPlayerEmail });
+                    // Check if there is no host and set the first player as the host
+                    if (!roomData.host && Object.entries(playersData).length > 0) {
+                        const firstPlayerKey = Object.keys(playersData)[0];
+                        const firstPlayerEmail = playersData[firstPlayerKey].email;
+
+                        setHost(firstPlayerEmail);
+
+                        // Update the host information in the database
+                        update(roomRef, { host: firstPlayerEmail })
+                            .then(() => console.log("Host set successfully:", firstPlayerEmail))
+                            .catch((error) => console.error("Failed to set host:", error));
+                    } else {
+                        setHost(roomData.host)
+                    }
+                } else {
+                    console.error("Room data not found.");
+                    setError("Room not found. Please check the room code.");
                 }
+                setLoading(false);
+            },
+            (error) => {
+                console.error("Error listening to room data:", error);
+                setError("Error loading room. Please try again.");
+                setLoading(false);
             }
-            setLoading(false);
-        }, (error) => {
-            console.error("Error listening to player data:", error);
-            setError("Error loading players. Please try again.");
-            setLoading(false);
-        });
+        );
+
 
         // Listen for game start
-        const gameRef = ref(realtimeDb, `rooms/${roomCode}/gameStarted`);
+        const gameRef = ref(realtimeDb, `rooms/${roomCode}/gameState`);
         const gameListener = onValue(gameRef, (snapshot) => {
-            const gameStarted = snapshot.val();
-            if (gameStarted) {
+            const gameState = snapshot.val();
+            if (gameState === "start") {
                 navigate(`/game/${roomCode}`);
             }
         });
 
         return () => {
-            remove(playerRef).catch((error) => console.error("Error removing player:", error));
-            playersListener();
+            // remove(playerRef).catch((error) => console.error("Error removing player:", error));
+            roomListener();
             gameListener();
         };
     }, [roomCode, user, host, navigate]);
@@ -86,22 +109,22 @@ const Lobby: React.FC = () => {
     };
 
     const handleStartGame = async () => {
-        if (players.length === 0) {
+        const playersLength: number = Object.entries(players).length
+        if (playersLength === 0) {
             setError("No players in the lobby to start the game.");
             return;
         }
 
-        const randomSeeker = players[Math.floor(Math.random() * players.length)].email;
-        // setSeeker(randomSeeker);
-        // console.log(seeker);
-        
+        const playersValues = Object.values(players); // Convert Record to an array of Player objects
+        const randomSeeker = playersValues[Math.floor(Math.random() * playersValues.length)]?.email;
 
         const roomRef = ref(realtimeDb, `rooms/${roomCode}`);
+        console.log(players);
+
         try {
             await update(roomRef, {
-                gameStarted: true,
-                seeker: randomSeeker,
-                players
+                gameState: "start",
+                seeker: randomSeeker
             });
         } catch (error) {
             console.error("Error starting the game:", error);
@@ -137,8 +160,8 @@ const Lobby: React.FC = () => {
                 <div>
                     <h3 className="text-lg font-semibold text-gray-700">Players:</h3>
                     <ul className="space-y-2 mt-4">
-                        {players.map((player, index) => (
-                            <li key={index} className="text-gray-800">
+                        {Object.entries(players).map(([key, player], index) => (
+                            <li key={index + key} className="text-gray-800">
                                 {player.email} -{' '}
                                 <span className={player.status === 'connected' ? 'text-green-500' : 'text-red-500'}>
                                     {player.status === 'connected' ? 'Connected' : 'Disconnected'}

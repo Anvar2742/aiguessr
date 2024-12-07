@@ -102,19 +102,20 @@ async function sendToChatGPT(message: string): Promise<{ reply: string }> {
     // Simulate per-character typing for the user's message
     // console.log("User is typing...");
     for (const _char of message) {
-      const charDelay = Math.random() * (25 - 5) + 5; // Random delay between 5ms and 15ms
+      const charDelay = Math.random() * (300 - 200) + 200; // Random delay between 5ms and 15ms
       await new Promise((resolve) => setTimeout(resolve, charDelay));
     }
     // console.log("User finished typing.");
 
     // Simulate ChatGPT "thinking" delay
-    const thinkingDelay = 1000 + Math.random() * 1000; // Random delay between 1s to 2s
+    // const thinkingDelay = 2500 + Math.random() * 4000; // Random delay between 1s to 2s
+    const thinkingDelay = 6000 // Random delay between 1s to 2s
     await new Promise((resolve) => setTimeout(resolve, thinkingDelay));
 
     // Fetch the system prompt
     const snapshot = await db.ref('chatGPT/prompt').once('value');
     const prompt = snapshot.val();
-    console.log((Math.random() * (1.4 - 1.0) + 1.0).toFixed(2));
+    // console.log((Math.random() * (1.4 - 1.0) + 1.0).toFixed(2));
     
 
     // Send the user's message to the ChatGPT API
@@ -127,7 +128,7 @@ async function sendToChatGPT(message: string): Promise<{ reply: string }> {
           { role: 'user', content: message },
         ],
         max_tokens: 150,
-        temperature: +((Math.random() * (1.3 - 1.1) + 1.1).toFixed(2)),
+        temperature: +((Math.random() * (1.2 - 1.05) + 1.05).toFixed(2)),
       },
       {
         headers: {
@@ -143,7 +144,7 @@ async function sendToChatGPT(message: string): Promise<{ reply: string }> {
     // Simulate per-character typing for ChatGPT's reply
     // console.log("ChatGPT is typing...");
     for (const _char of reply) {
-      const charDelay = Math.random() * (25 - 5) + 5; // Random delay between 5ms and 15ms
+      const charDelay = Math.random() * (300 - 200) + 200; // Random delay between 5ms and 15ms
       await new Promise((resolve) => setTimeout(resolve, charDelay));
     }
     // console.log("ChatGPT finished typing.");
