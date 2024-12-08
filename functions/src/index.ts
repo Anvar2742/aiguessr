@@ -109,7 +109,7 @@ async function sendToChatGPT(message: string): Promise<{ reply: string }> {
 
     // Simulate ChatGPT "thinking" delay
     // const thinkingDelay = 2500 + Math.random() * 4000; // Random delay between 1s to 2s
-    const thinkingDelay = 6000 // Random delay between 1s to 2s
+    const thinkingDelay = 5000 // Random delay between 1s to 2s
     await new Promise((resolve) => setTimeout(resolve, thinkingDelay));
 
     // Fetch the system prompt
@@ -128,7 +128,7 @@ async function sendToChatGPT(message: string): Promise<{ reply: string }> {
           { role: 'user', content: message },
         ],
         max_tokens: 150,
-        temperature: +((Math.random() * (1.2 - 1.05) + 1.05).toFixed(2)),
+        temperature: +((Math.random() * (1.2 - 1.0) + 1.05).toFixed(2)),
       },
       {
         headers: {
