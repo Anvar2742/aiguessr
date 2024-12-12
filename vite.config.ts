@@ -8,6 +8,7 @@ export default defineConfig({
     host: true, // Binds to all network interfaces
     port: 3000 // Specify a port if you prefer something specific
   },
+  base: "/",
   build: {
     outDir: 'public', // Specify your desired output directory
   },

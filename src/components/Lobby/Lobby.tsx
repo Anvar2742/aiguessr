@@ -30,16 +30,15 @@ const Lobby: React.FC = () => {
 
     return (
         <div className="max-w-md mx-auto p-6 bg-white shadow-lg rounded-lg">
-            <div className='mb-10'>
-                <h2 className="text-2xl font-semibold text-center text-gray-800 mb-6">Lobby: {roomCode}</h2>
+            <div className='mb-10 flex items-center justify-between'>
+                <h2 className="text-2xl font-semibold text-center text-gray-800">Lobby: {roomCode}</h2>
                 <button onClick={() => handleCopyClick(roomCode, setCopySuccess)} className="bg-blue-500 text-white font-semibold py-2 px-6 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300 transition duration-200 ease-in-out">
-                    Copy invite link
+                    {copySuccess ? "Done!" : "Copy invite link"}
                 </button>
-                {copySuccess && <p>Room code copied to clipboard!</p>}
             </div>
 
             {loading ? (
-                <LoadingScreen isFull={false} />
+                <LoadingScreen text="Loading players"/>
             ) : error ? (
                 <p className="text-red-500">{error}</p>
             ) : (

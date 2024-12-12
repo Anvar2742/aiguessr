@@ -68,7 +68,7 @@ export const useLobbyManager = ({
         // Attempt to set player in Realtime Database
         set(playerRef, { email: user.email, status: 'connected', state: "alive" })
             .then(() => {
-                console.log("Player set successfully.");
+                // console.log("Player set successfully.");
                 setError("");
             })
             .catch((error) => {
@@ -87,7 +87,7 @@ export const useLobbyManager = ({
                 if (roomData) {
                     const playersData = roomData.players || {};
                     setPlayers(playersData);
-                    console.log("Players data updated:", playersData);
+                    // console.log("Players data updated:", playersData);
 
                     if (!roomData.host && Object.entries(playersData).length > 0) {
                         const firstPlayerKey = Object.keys(playersData)[0];
@@ -96,13 +96,13 @@ export const useLobbyManager = ({
                         setHost(firstPlayerEmail);
 
                         update(roomRef, { host: firstPlayerEmail })
-                            .then(() => console.log("Host set successfully:", firstPlayerEmail))
+                            // .then(() => console.log("Host set successfully:", firstPlayerEmail))
                             .catch((error) => console.error("Failed to set host:", error));
                     } else {
                         setHost(roomData.host);
                     }
                 } else {
-                    console.error("Room data not found.");
+                    // console.error("Room data not found.");
                     setError("Room not found. Please check the room code.");
                 }
                 setLoading(false);

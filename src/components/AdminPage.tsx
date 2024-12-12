@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import LoadingScreen from './LoadingScreen';
 
 const AdminPage = () => {
   const [prompt, setPrompt] = useState('');
@@ -41,7 +42,7 @@ const AdminPage = () => {
       <h1>Admin Page: Edit ChatGPT Prompt</h1>
       <h3>Current Prompt:</h3>
       <p style={{ whiteSpace: 'pre-wrap', border: '1px solid #ccc', padding: '10px' }}>
-        {prompt || 'Loading...'}
+        {prompt || <LoadingScreen isFull={true} />}
       </p>
       <form onSubmit={handleUpdatePrompt}>
         <textarea

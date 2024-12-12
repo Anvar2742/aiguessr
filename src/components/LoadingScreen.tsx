@@ -1,10 +1,11 @@
 import React from "react";
 
 interface LoadingProps {
-    isFull: boolean;
+    isFull?: boolean;
+    text?: string;
 }
 
-const LoadingScreen: React.FC<LoadingProps>  = ({isFull}) => {
+const LoadingScreen: React.FC<LoadingProps>  = ({isFull = false, text}) => {
     return (
         <div className={`flex items-center justify-center ${isFull ? "h-screen" : ""}`}>
             <div className="text-center">
@@ -21,6 +22,7 @@ const LoadingScreen: React.FC<LoadingProps>  = ({isFull}) => {
                         </linearGradient>
                     </defs>
                 </svg>
+                {text ? <p className="mt-4">{text}</p> : ""}
             </div>
         </div>
     );

@@ -17,6 +17,11 @@ const App: React.FC = () => {
       <Router>
         <Routes>
           <Route path="/" element={<AppContent />} />
+        </Routes>
+      </Router>
+      <Router basename="/produmpplayer">
+        <Routes>
+          <Route path="/" element={<AppContent />} />
           <Route path="/join-room" element={<JoinRoom />} />
           <Route
             path="/lobby/:roomCode"
