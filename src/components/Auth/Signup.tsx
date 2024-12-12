@@ -1,8 +1,10 @@
-// src/components/Signup.tsx
 import React, { useState } from 'react';
 import { auth, createUserWithEmailAndPassword } from '../../firebase';
 import { useAuth } from '../../context/AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { getFirestore, doc, setDoc } from 'firebase/firestore'; // Firestore for storing user roles
+
+const db = getFirestore(); // Initialize Firestore
 
 const Signup: React.FC = () => {
     const { setUser } = useAuth();
@@ -10,19 +12,31 @@ const Signup: React.FC = () => {
     const [password, setPassword] = useState<string>('');
     const [error, setError] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(false);
-	const navigate = useNavigate();
+    const navigate = useNavigate();
     const location = useLocation();
-    const from = location.state?.from?.pathname || '/';
+    const from = location.state?.from?.pathname || '/hiddenbase';
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError('');
+
         try {
+            // Create user with Firebase Auth
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            setUser(userCredential.user); // Set the user in context
+            const user = userCredential.user;
+
+            // Check if the email should be an admin
+            const isAdmin = email === 'anvarmusa12@gmail.com'; // Replace with your admin email logic
+
+            // Save user role in Firestore
+            await setDoc(doc(db, 'users', user.uid), {
+                email: user.email,
+                role: isAdmin ? 'admin' : 'user', // Assign role
+            });
+
+            setUser(user); // Set the user in context
             navigate(from);
-            // alert('Signup successful!');
         } catch (error: any) {
             setError(error.message);
         } finally {

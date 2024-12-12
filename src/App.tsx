@@ -9,34 +9,41 @@ import Login from './components/Auth/Login';
 import AppContent from './components/AppContent';
 import ResetPassword from './components/Auth/ResetPassword';
 import AdminPage from './components/AdminPage';
-import ProtectedRoute from './components/ProtectedRout';
+// import ProtectedRoute from './components/ProtectedRout';
+import SoonPage from './components/CommingSoon/SoonPage';
+import AdminProtectedRoute from './components/AdminProtectedRoute';
+
 
 const App: React.FC = () => {
   return (
     <AuthProvider>
       <Router>
         <Routes>
-          <Route path="/" element={<AppContent />} />
-        </Routes>
-      </Router>
-      <Router basename="/produmpplayer">
-        <Routes>
-          <Route path="/" element={<AppContent />} />
-          <Route path="/join-room" element={<JoinRoom />} />
+          {/* Public Route */}
+          <Route path="/" element={<SoonPage />} />
+
+          {/* Hidden Base Route */}
           <Route
-            path="/lobby/:roomCode"
+            path="/hiddenbase/*"
             element={
-              <ProtectedRoute>
-                <Lobby />
-              </ProtectedRoute>
+              <>
+                <AdminProtectedRoute>
+                  <Routes>
+                    <Route path="/" element={<AppContent />} />
+                    <Route path="/join-room" element={<JoinRoom />} />
+                    <Route path="/lobby/:roomCode" element={<Lobby />} />
+                    <Route path="/game/:roomCode" element={<GamePage />} />
+                    <Route path="/resetpassword" element={<ResetPassword />} />
+                    <Route path="/admin" element={<AdminPage />} />
+                  </Routes>
+                </AdminProtectedRoute>
+                <Routes>
+                  <Route path="/signup" element={<Signup />} />
+                  <Route path="/login" element={<Login />} />
+                </Routes>
+              </>
             }
           />
-          {/* <Route path="/lobby/:roomCode" element={<Lobby />} /> */}
-          <Route path="/game/:roomCode" element={<GamePage />} /> {/* New route for game page */}
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/resetpassword" element={<ResetPassword />} />
-          <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </Router>
     </AuthProvider>
