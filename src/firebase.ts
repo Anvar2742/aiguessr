@@ -54,7 +54,7 @@ if (window.location.hostname === 'localhost') {
     console.log('Connecting to Firebase emulators...');
     connectAuthEmulator(auth, 'http://localhost:9099');
     connectFirestoreEmulator(db, 'localhost', 8080);
-    connectDatabaseEmulator(realtimeDb, 'localhost', 9000);
+    connectDatabaseEmulator(realtimeDb, 'localhost', 9001);
 }
 
 export {

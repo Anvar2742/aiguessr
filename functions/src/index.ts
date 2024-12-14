@@ -1,8 +1,10 @@
 import { onRequest } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
-import { getDatabase } from 'firebase-admin/database'; // Explicit import
+import { Database, getDatabase } from 'firebase-admin/database'; // Explicit import
 import { Request, Response } from 'express';
 import axios from 'axios';
+import { getFirestore } from 'firebase-admin/firestore';
+import { theQuestionPrompts } from './prompts';
 require('dotenv').config();
 
 // Firebase configuration
@@ -19,10 +21,10 @@ const firebaseConfig = {
 
 if (!admin.apps.length) {
 
-} 
+}
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY; // Replace with your OpenAI API key
 const isLocalhost = process.env.ENVIRONMENT_KEY === 'dev';
-if (!admin.apps.length) { 
+if (!admin.apps.length) {
   admin.initializeApp(
     isLocalhost
       ? {
@@ -36,11 +38,11 @@ if (!admin.apps.length) {
         databaseURL: 'http://127.0.0.1:9000/?ns=aiguessr-vf-default-rtdb', // Local emulator URL
       }
       : firebaseConfig // Default to production configuration
-    );
-  }
-  
+  );
+}
 
-  const db = getDatabase(); // Initialize Realtime Database
+
+const db = getDatabase(); // Initialize Realtime Database
 
 // Helper function to generate a unique chat key
 const getChatKey = (from: string, to: string): string => {
@@ -72,7 +74,7 @@ exports.sendMessageToGPT = onRequest({ cors, region: "europe-west1" }, async (re
       return;
     }
     console.log(message);
-    
+
     // Simulate GPT API call
     const gptResponse = await sendToChatGPT(message);
 
@@ -116,7 +118,7 @@ async function sendToChatGPT(message: string): Promise<{ reply: string }> {
     const snapshot = await db.ref('chatGPT/prompt').once('value');
     const prompt = snapshot.val();
     // console.log((Math.random() * (1.4 - 1.0) + 1.0).toFixed(2));
-    
+
 
     // Send the user's message to the ChatGPT API
     const response = await axios.post(
@@ -197,3 +199,127 @@ exports.updatePrompt = onRequest({ cors, region: "europe-west1" }, async (req, r
     res.status(500).send({ error: 'Failed to update prompt' });
   }
 });
+
+// Initialize Firebase Admin SDK
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
+
+
+exports.theQuestionGPT = onRequest({ cors: true, region: "europe-west1" }, async (req: Request, res: Response): Promise<void> => {
+  // Handle preflight OPTIONS request for CORS
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  if (req.method === 'OPTIONS') {
+    res.status(204).send(''); // No content for preflight
+    return;
+  }
+
+  if (req.method !== 'POST') {
+    res.status(405).send('Method Not Allowed'); // Only POST requests allowed
+    return;
+  }
+
+  try {
+    const db = getFirestore();
+    const rtdb = getDatabase();
+
+    const { input, email, fingerprint, username } = req.body;
+
+    console.log("Request body:", req.body);
+
+    if (!input || !email || !fingerprint || !username) {
+      res.status(400).send({
+        error: 'Missing required fields: input, email, fingerprint, or username'
+      });
+      return;
+    }
+
+    // Get answer from GPT
+    const gptResponse = await theAnswerGPT(input);
+    const parsedReply = JSON.parse(gptResponse.reply);
+
+    const timestamp = Date.now();
+
+    // Save input, email, username, and GPT response to Firestore
+    await db.collection('userInputs').add({
+      email,
+      input,
+      username,
+      gptResponse: parsedReply,
+      totalPoints: parsedReply["totalPoints"],
+      timestamp
+    });
+
+    // Save fingerprint with a timestamp to Firestore
+    await db.collection('fingerprints').doc(fingerprint).set({
+      timestamp
+    });
+
+    // Save subset of data to RTDB (no email)
+    const rtdbRef = rtdb.ref('userInputs').push();
+    await rtdbRef.set({
+      input,
+      username,
+      fingerprint,
+      gptResponse: parsedReply,
+      totalPoints: parsedReply["totalPoints"],
+      timestamp
+    });
+
+    res.status(200).send(gptResponse);
+  } catch (error: any) {
+    console.error('Error handling request:', error);
+    res.status(500).send({
+      error: 'Internal Server Error',
+      details: error?.message || 'No error message available'
+    });
+  }
+});
+
+
+
+async function theAnswerGPT(input: string): Promise<{ reply: string }> {
+  const endpoint = 'https://api.openai.com/v1/chat/completions';
+
+  try {
+    const prompts = theQuestionPrompts;
+
+    // Randomly select a prompt
+    const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
+
+    // Send the user's message to the ChatGPT API
+    const response = await axios.post(
+      endpoint,
+      {
+        model: 'gpt-4',
+        messages: [
+          { role: 'system', content: randomPrompt },
+          { role: 'user', content: input },
+        ],
+        // max_tokens: 150,
+        temperature: 0,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+        },
+      }
+    );
+
+    // Get ChatGPT's reply
+    const reply = response.data.choices[0]?.message?.content.trim() || 'No response from ChatGPT';
+
+
+
+    return { reply };
+  } catch (error: any) {
+    console.error('Error communicating with OpenAI API:', error.response?.data || error.message);
+    throw new Error('Failed to fetch response from ChatGPT API');
+  }
+}
+
+
