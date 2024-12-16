@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Sphere } from '@react-three/drei';
-import { getFirestore, addDoc, collection, doc, getDoc, setDoc, getDocs, query, where } from 'firebase/firestore';
+import { getFirestore, collection, doc, getDocs, query, where } from 'firebase/firestore';
 import useFingerprint from './useFingerprint';
-import { ref, onValue, getDatabase } from 'firebase/database';
+import { ref, onValue } from 'firebase/database';
 import { realtimeDb } from '../../firebase';
+import Leaderboard from './LeaderBoard';
 
-type SoonEntry = {
+export type SoonEntry = {
     username: string;
     gptResponse: Record<string, string>; // Keys are strings, values are strings
     input: string;
@@ -28,13 +27,17 @@ const SoonPage: React.FC = () => {
     useEffect(() => {
         const userInputsRef = ref(realtimeDb, 'userInputs');
 
-        // onValue will set up a listener that runs the callback anytime the data changes
+        // Set up a listener that runs the callback anytime the data changes
         const unsubscribe = onValue(userInputsRef, (snapshot) => {
             const data = snapshot.val();
-            // Convert the object into an array (if data is not null)
-            console.log(data);
 
+            // Convert the object into an array (if data is not null)
             const soonEntrysArray: SoonEntry[] = data ? Object.values(data) : [];
+
+            // Sort the array in descending order by totalPoints
+            soonEntrysArray.sort((a, b) => b.totalPoints - a.totalPoints);
+
+            // Update state with the sorted array
             setSoonEntrys(soonEntrysArray);
         });
 
@@ -43,6 +46,7 @@ const SoonPage: React.FC = () => {
             unsubscribe();
         };
     }, []);
+
 
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -100,21 +104,9 @@ const SoonPage: React.FC = () => {
 
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white">
+        <div className="min-h-screen bg-gray-900 text-white px-4 max-w-5xl mx-auto text-center">
             <h1 className="text-4xl font-bold mb-4">AI Guesser</h1>
             <p className="text-lg mb-8">The ultimate AI vs human multisoonEntry showdown is coming soon!</p>
-
-            <div className="w-full h-64">
-                <Canvas>
-                    {/* A 3D spinning sphere */}
-                    <ambientLight intensity={0.5} />
-                    <directionalLight position={[2, 2, 2]} />
-                    <Sphere args={[1, 32, 32]} scale={1.5}>
-                        <meshStandardMaterial attach="material" color="blue" wireframe />
-                    </Sphere>
-                    <OrbitControls />
-                </Canvas>
-            </div>
 
             <form onSubmit={handleSubmit} className="mt-8 flex flex-col items-center text-slate-950">
                 <input
@@ -162,26 +154,8 @@ const SoonPage: React.FC = () => {
                     )))}
                 </div>
             )}
-            <h1>SoonEntrys</h1>
-            <ul className="list-none space-y-6 mt-6 text-slate-950">
-                {soonEntrys.map((soonEntry: { username: string; gptResponse: Record<string, string>; totalPoints: number; input: string }, index: number) => (
-                    <li key={index} className="bg-white rounded-lg shadow p-6">
-                        <h3 className="text-xl font-semibold mb-3 text-gray-800">{soonEntry.username}</h3>
-                        <p>{soonEntry.input}</p>
-                        <p>{soonEntry.totalPoints}</p>
-                        <ol className="list-decimal ml-6 space-y-2">
-                            {Object.entries(soonEntry.gptResponse).filter(([nameF]) => (!(nameF === "totalPoints"))).map(([name, value]) => (
-                                <li key={name + value} className="text-gray-700">
-                                    <span className="font-medium text-gray-900">{name}</span>
-                                    <span className="mx-2 text-gray-400">-</span>
-                                    <span>{value}</span>
-                                </li>
-                            ))}
-                        </ol>
-                    </li>
-                ))}
-            </ul>
 
+            <Leaderboard soonEntrys={soonEntrys} />
 
             <footer className="mt-12 text-sm text-gray-400">
                 &copy; 2024 AI Guesser. All Rights Reserved.

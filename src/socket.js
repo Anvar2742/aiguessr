@@ -15,12 +15,13 @@ const io = new Server(server, {
 });
 
 io.on("connection", (socket) => {
-//   console.log(`Player connected: ${socket.id}`);
+  console.log(`Player connected: ${socket.id}`);
 
   // Handle sending letters
-  socket.on("sendLetter", (letterData) => {
-    console.log(`Letter sent from ${socket.id}: ${letterData}`);
-    io.emit("receiveLetter", { letterData });
+  socket.on("sendLetter", ({ content, recipientId }) => {
+    console.log("cool")
+    console.log(`Letter sent from ${socket.id} to ${recipientId}: ${content}`);
+    io.to(recipientId).emit("receiveLetter", { content });
   });
 
   // Handle player disconnection

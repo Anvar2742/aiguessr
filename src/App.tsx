@@ -12,6 +12,7 @@ import AdminPage from './components/AdminPage';
 // import ProtectedRoute from './components/ProtectedRout';
 import SoonPage from './components/CommingSoon/SoonPage';
 import AdminProtectedRoute from './components/AdminProtectedRoute';
+import Multiplayer from './components/test/Multiplayer';
 
 
 const App: React.FC = () => {
@@ -20,7 +21,8 @@ const App: React.FC = () => {
       <Router>
         <Routes>
           {/* Public Route */}
-          <Route path="/" element={<SoonPage />} />
+          {/* <Route path="/" element={<SoonPage />} /> */}
+          <Route path="/" element={<Multiplayer />} />
 
           {/* Hidden Base Route */}
           <Route
